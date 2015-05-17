@@ -194,10 +194,10 @@ extern int scanhash_x14(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
 extern int scanhash_x15(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
                             uint32_t max_nonce, uint64_t *hashes_done);
 
-extern void cryptonight_hash(void* output, const void* input, size_t input_len);
+extern void cryptonight_hash(void* output, const void* input, size_t input_len, int lite);
 
 extern int scanhash_cryptonight(int thr_id, uint32_t *pdata, const uint32_t *ptarget,
-                            uint32_t max_nonce, uint64_t *hashes_done);
+				uint32_t max_nonce, uint64_t *hashes_done, int lite);
 
 struct thr_info {
 	int		id;

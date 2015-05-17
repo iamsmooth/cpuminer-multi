@@ -114,6 +114,7 @@ enum algos {
     ALGO_X14,         /* X14 */
     ALGO_X15,         /* X15 Whirlpool */
     ALGO_CRYPTONIGHT, /* CryptoNight */
+    ALGO_CRYPTONIGHT_LITE, /* CryptoNight-Lite */
 };
 
 static const char *algo_names[] = {
@@ -131,6 +132,7 @@ static const char *algo_names[] = {
     [ALGO_X14] =         "x14",
     [ALGO_X15] =         "x15",
     [ALGO_CRYPTONIGHT] = "cryptonight",
+    [ALGO_CRYPTONIGHT_LITE] = "cryptonight-lite"
 };
 
 bool opt_debug = false;
@@ -560,6 +562,7 @@ static void share_result(int result, struct work *work, const char *reason) {
 
     switch (opt_algo) {
     case ALGO_CRYPTONIGHT:
+    case ALGO_CRYPTONIGHT_LITE:
         applog(LOG_INFO, "accepted: %lu/%lu (%.2f%%), %.2f H/s at diff %g %s",
                 accepted_count, accepted_count + rejected_count,
                 100. * accepted_count / (accepted_count + rejected_count), hashrate,
@@ -602,8 +605,9 @@ static bool submit_upstream_work(CURL *curl, struct work *work) {
             char hash[32];
             switch(opt_algo) {
             case ALGO_CRYPTONIGHT:
+            case ALGO_CRYPTONIGHT_LITE:
             default:
-                cryptonight_hash(hash, work->data, 76);
+	      cryptonight_hash(hash, work->data, 76,opt_algo==ALGO_CRYPTONIGHT_LITE);
             }
             char *hashhex = bin2hex(hash, 32);
             snprintf(s, JSON_BUF_LEN,
@@ -635,8 +639,9 @@ static bool submit_upstream_work(CURL *curl, struct work *work) {
             char hash[32];
             switch(opt_algo) {
             case ALGO_CRYPTONIGHT:
+            case ALGO_CRYPTONIGHT_LITE:
             default:
-                cryptonight_hash(hash, work->data, 76);
+	      cryptonight_hash(hash, work->data, 76,opt_algo==ALGO_CRYPTONIGHT_LITE);
             }
             char *hashhex = bin2hex(hash, 32);
             snprintf(s, JSON_BUF_LEN,
@@ -1128,6 +1133,7 @@ static void *miner_thread(void *userdata) {
                 max64 = opt_scrypt_n < 16 ? 0x3ffff : 0x3fffff / opt_scrypt_n;
                 break;
             case ALGO_CRYPTONIGHT:
+            case ALGO_CRYPTONIGHT_LITE:
                 max64 = 0x40LL;
                 break;
             case ALGO_FRESH:
@@ -1215,8 +1221,9 @@ static void *miner_thread(void *userdata) {
                     &hashes_done);
             break;
         case ALGO_CRYPTONIGHT:
+        case ALGO_CRYPTONIGHT_LITE:
             rc = scanhash_cryptonight(thr_id, work.data, work.target,
-                    max_nonce, &hashes_done);
+				      max_nonce, &hashes_done,opt_algo==ALGO_CRYPTONIGHT_LITE);
             break;
 
         default:
@@ -1236,6 +1243,7 @@ static void *miner_thread(void *userdata) {
         if (!opt_quiet) {
             switch(opt_algo) {
             case ALGO_CRYPTONIGHT:
+            case ALGO_CRYPTONIGHT_LITE:
                 applog(LOG_INFO, "thread %d: %lu hashes, %.2f H/s", thr_id,
                         hashes_done, thr_hashrates[thr_id]);
                 break;
@@ -1254,6 +1262,7 @@ static void *miner_thread(void *userdata) {
             if (i == opt_n_threads) {
                 switch(opt_algo) {
                 case ALGO_CRYPTONIGHT:
+                case ALGO_CRYPTONIGHT_LITE:
                     applog(LOG_INFO, "Total: %s H/s", hashrate);
                     break;
                 default:
@@ -1846,7 +1855,7 @@ int main(int argc, char *argv[]) {
 		init_quarkhash_contexts();
 	} else if (opt_algo == ALGO_BLAKE) {
 		init_blakehash_contexts();
-	} else if(opt_algo == ALGO_CRYPTONIGHT) {
+	} else if(opt_algo == ALGO_CRYPTONIGHT||opt_algo == ALGO_CRYPTONIGHT_LITE) {
 		jsonrpc_2 = true;
 		aes_ni_supported = has_aes_ni();
 		applog(LOG_INFO, "Using JSON-RPC 2.0");
