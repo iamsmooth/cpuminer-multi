@@ -70,8 +70,8 @@ static void (* const extra_hashes[4])(const void *, size_t, char *) = {
 };
 
 // Credit to Wolf for optimizing this function
-static inline size_t e2i(const uint8_t* a) {
-	return ((uint32_t *)a)[0] & 0x1FFFF0;
+static inline size_t e2i(const uint8_t* a, int lite) {
+        return ((uint32_t *)a)[0] & (lite ?0xFFFF0:0x1FFFF0);
 }
 
 static inline void mul_sum_xor_dst(const uint8_t* a, uint8_t* c, uint8_t* dst) {
@@ -140,17 +140,17 @@ void cryptonight_hash_ctx(void* output, const void* input, size_t len, struct cr
 		 * next address  <-+
 		 */
 		/* Iteration 1 */
-		j = e2i(ctx->a);
+	        j = e2i(ctx->a,lite);
 		aesb_single_round(&ctx->long_state[j], ctx->c, ctx->a);
 		xor_blocks_dst(ctx->c, ctx->b, &ctx->long_state[j]);
 		/* Iteration 2 */
-		mul_sum_xor_dst(ctx->c, ctx->a, &ctx->long_state[e2i(ctx->c)]);
+		mul_sum_xor_dst(ctx->c, ctx->a, &ctx->long_state[e2i(ctx->c,lite)]);
 		/* Iteration 3 */
-		j = e2i(ctx->a);
+		j = e2i(ctx->a,lite);
 		aesb_single_round(&ctx->long_state[j], ctx->b, ctx->a);
 		xor_blocks_dst(ctx->b, ctx->c, &ctx->long_state[j]);
 		/* Iteration 4 */
-		mul_sum_xor_dst(ctx->b, ctx->a, &ctx->long_state[e2i(ctx->b)]);
+		mul_sum_xor_dst(ctx->b, ctx->a, &ctx->long_state[e2i(ctx->b,lite)]);
 	}
 
 	memcpy(ctx->text, ctx->state.init, INIT_SIZE_BYTE);
@@ -214,17 +214,17 @@ void cryptonight_hash_ctx_aes_ni(void* output, const void* input, size_t len, st
 		 * next address  <-+
 		 */
 		/* Iteration 1 */
-		j = e2i(ctx->a);
+	        j = e2i(ctx->a,lite);
 		fast_aesb_single_round(&ctx->long_state[j], ctx->c, ctx->a);
 		xor_blocks_dst(ctx->c, ctx->b, &ctx->long_state[j]);
 		/* Iteration 2 */
-		mul_sum_xor_dst(ctx->c, ctx->a, &ctx->long_state[e2i(ctx->c)]);
+		mul_sum_xor_dst(ctx->c, ctx->a, &ctx->long_state[e2i(ctx->c,lite)]);
 		/* Iteration 3 */
-		j = e2i(ctx->a);
+		j = e2i(ctx->a,lite);
 		fast_aesb_single_round(&ctx->long_state[j], ctx->b, ctx->a);
 		xor_blocks_dst(ctx->b, ctx->c, &ctx->long_state[j]);
 		/* Iteration 4 */
-		mul_sum_xor_dst(ctx->b, ctx->a, &ctx->long_state[e2i(ctx->b)]);
+		mul_sum_xor_dst(ctx->b, ctx->a, &ctx->long_state[e2i(ctx->b,lite)]);
 	}
 
 	memcpy(ctx->text, ctx->state.init, INIT_SIZE_BYTE);
